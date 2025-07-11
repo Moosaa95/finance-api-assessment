@@ -1,103 +1,160 @@
-import Image from "next/image";
+"use client"
+import { NewsList } from "@/components/News/NewsList"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ErrorState } from "@/components/ui/error-state"
+import { PageHeader } from "@/components/ui/header"
+import { InfiniteScrollTrigger } from "@/components/ui/infinite-scroll-trigger"
+import { PageInfo } from "@/components/ui/info"
+import { LoadingState } from "@/components/ui/loading-state"
+import { Pagination } from "@/components/ui/pagination"
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
+import { useNews } from "@/hooks/use-news"
+import { useNewsInfinite } from "@/hooks/use-news-infinite-scroll"
+import { usePagination } from "@/hooks/use-pagination"
 
-export default function Home() {
+interface NewsArticle {
+  id: number
+  category: string
+  datetime: number
+  headline: string
+  image: string
+  related: string
+  source: string
+  summary: string
+  url: string
+}
+
+interface ApiResponse {
+  data?: NewsArticle[]
+  error?: string
+}
+
+const ARTICLES_PER_PAGE = 16
+
+export default function FinanceDigest() {
+  const { articles, loading, error, hasMore, loadMore, refetch, isLoadingMore } = useNewsInfinite()
+
+  const { isFetching, setIsFetching, sentinelRef } = useInfiniteScroll(
+    async () => {
+      console.log("Infinite scroll triggered")
+      if (hasMore && !isLoadingMore) {
+        await loadMore()
+      }
+    },
+    {
+      threshold: 0.1,
+      rootMargin: "100px",
+      enabled: hasMore && !isLoadingMore,
+    },
+  )
+
+  // Reset fetching state when loading more completes
+  if (isFetching && !isLoadingMore) {
+    setIsFetching(false)
+  }
+
+  // Initial loading state
+  if (loading) {
+    return <LoadingState />
+  }
+
+  // Error state
+  if (error) {
+    return <ErrorState error={error} onRetry={refetch} />
+  }
+
+  // No articles state
+  if (articles.length === 0) {
+    return <EmptyState />
+  }
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-black text-white p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <PageHeader />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* Article count info */}
+        <div className="mb-6 text-center">
+          <p className="text-gray-400 text-sm">
+            Showing {articles.length} articles
+            {hasMore && <span className="text-gray-500"> • Scroll for more</span>}
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <NewsList articles={articles} />
+
+        {/* Infinite scroll trigger and loading state */}
+        <InfiniteScrollTrigger
+          hasMore={hasMore}
+          isLoading={isLoadingMore}
+          onLoadMore={loadMore}
+          sentinelRef={sentinelRef}
+        />
+
+        {/* End of content message */}
+        {!hasMore && articles.length > 16 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 text-sm">You've reached the end of the news feed</p>
+            <button onClick={refetch} className="mt-2 text-blue-400 hover:text-blue-300 text-sm underline">
+              Refresh for latest news
+            </button>
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )
+  // const { articles, loading, error, refetch } = useNews()
+  // const {
+  //   currentPage,
+  //   totalPages,
+  //   currentItems: currentArticles,
+  //   goToPage,
+  //   goToPrevious,
+  //   goToNext,
+  //   getPageNumbers,
+  //   startIndex,
+  //   endIndex,
+  // } = usePagination(articles, ARTICLES_PER_PAGE)
+
+  // if (loading) {
+  //   return <LoadingState />
+  // }
+
+  // if (error) {
+  //   return <ErrorState error={error} onRetry={refetch} />
+  // }
+
+  // if (articles.length === 0) {
+  //   return <EmptyState />
+  // }
+
+  // return (
+  //   <div className="min-h-screen bg-black text-white p-4 sm:p-6 lg:p-8">
+  //     <div className="max-w-7xl mx-auto">
+  //       <PageHeader />
+
+  //       {/* Article count info */}
+  //       <div className="mb-6 text-center">
+  //         <p className="text-gray-400 text-sm">
+  //           Showing {articles.length} articles
+  //           {hasMore && <span className="text-gray-500"> • Scroll for more</span>}
+  //         </p>
+  //       </div>
+
+  //       <NewsList articles={articles} />
+
+  //       {/* Infinite scroll trigger and loading state */}
+  //       <InfiniteScrollTrigger hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+
+  //       {/* End of content message */}
+  //       {!hasMore && articles.length > 16 && (
+  //         <div className="text-center py-8">
+  //           <p className="text-gray-500 text-sm">You've reached the end of the news feed</p>
+  //           <button onClick={refetch} className="mt-2 text-blue-400 hover:text-blue-300 text-sm underline">
+  //             Refresh for latest news
+  //           </button>
+  //         </div>
+  //       )}
+  //     </div>
+  //   </div>
+  // )
 }
